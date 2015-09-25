@@ -1,0 +1,16 @@
+{
+    "name": "derelict-cocoa",
+    "description": "A dynamic binding to the Apple Carbon framework.",
+    "homepage": "https://github.com/p0nce/DerelictCarbon",
+    "license": "Boost",
+    "authors": [
+        "Guillaume Piolat"
+    ],
+
+    "targetName": "DerelictCarbon",
+    "targetPath": "lib",
+
+    "dependencies": {
+        "derelict-util": "~>2.0"
+    }
+}
