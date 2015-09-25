@@ -1,5 +1,5 @@
 {
-    "name": "derelict-cocoa",
+    "name": "derelict-carbon",
     "description": "A dynamic binding to the Apple Carbon framework.",
     "homepage": "https://github.com/p0nce/DerelictCarbon",
     "license": "Boost",

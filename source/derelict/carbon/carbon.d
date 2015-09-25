@@ -42,7 +42,7 @@ else
     static assert(0, "Need to implement Carbon libNames for this operating system.");
 
 
-class DerelictCarbon : SharedLibLoader
+class DerelictCarbonLoader : SharedLibLoader
 {
     protected
     {
