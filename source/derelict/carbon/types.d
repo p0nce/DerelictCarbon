@@ -29,54 +29,35 @@
 * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-module derelict.carbon.carbon;
+module derelict.carbon.types;
 
 version(OSX):
 
-import derelict.util.system;
-import derelict.util.loader;
+import core.stdc.config;
 
-import derelict.carbon.hitoolbox;
+// TODO: put those types in the proper place
 
-static if(Derelict_OS_Mac)
-    enum libNames = "/System/Library/Frameworks/Carbon.framework/Carbon";
-else
-    static assert(0, "Need to implement Carbon libNames for this operating system.");
-
-
-class DerelictCarbonLoader : SharedLibLoader
+struct Rect
 {
-    protected
-    {
-        this()
-        {
-            super(libNames);
-        }
-
-        override void loadSymbols()
-        {
-            // hitoolbox
-            bindFunc(cast(void**)&GetMainEventLoop, "GetMainEventLoop");
-            bindFunc(cast(void**)&InstallEventHandler, "InstallEventHandler");
-            bindFunc(cast(void**)&GetControlEventTarget, "GetControlEventTarget");
-            bindFunc(cast(void**)&CreateUserPaneControl, "CreateUserPaneControl");
-            bindFunc(cast(void**)&GetWindowAttributes, "GetWindowAttributes");
-        }
-    }
+    short left;
+    short top;
+    short right;
+    short bottom;
 }
 
+alias EventHandlerCallRef = void*; // TODO: belongs to DerelictCF
+alias UInt32 = int; // TODO: belongs to DerelictCF
+alias OSStatus = int; // TODO: belongs to DerelictCF
+alias OSType = uint; // ?
+alias ItemCount = c_ulong;
 
-__gshared DerelictCarbonLoader DerelictCarbon;
 
-shared static this()
+alias WindowRef = void*; //?
+alias EventLoopTimerRef = void*; //?
+alias WindowAttributes = int;//?
+
+// To support character constants
+package int CCONST(int a, int b, int c, int d) pure nothrow
 {
-    DerelictCarbon = new DerelictCarbonLoader;
+    return (a << 24) | (b << 16) | (c << 8) | (d << 0);
 }
-
-unittest
-{
-    static if(Derelict_OS_Mac)
-        DerelictCarbon.load();
-}
-
-
