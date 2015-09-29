@@ -43,9 +43,32 @@ alias EventHandlerRef = void*;
 alias EventHandlerCallRef = void*;
 alias EventTargetRef = void*;
 
+alias EventParamName = OSType;
+alias EventParamType = OSType;
 alias EventTime = double;
 alias EventTimeout = EventTime;
 alias EventTimerInterval = EventTime;
+
+
+enum : int
+{
+    eventAlreadyPostedErr         = -9860,
+    eventTargetBusyErr            = -9861,
+    eventClassInvalidErr          = -9862,
+    eventClassIncorrectErr        = -9864,
+    eventDeferAccessibilityEventErr = -9865,
+    eventHandlerAlreadyInstalledErr = -9866,
+    eventInternalErr              = -9868,
+    eventKindIncorrectErr         = -9869,
+    eventParameterNotFoundErr     = -9870,
+    eventNotHandledErr            = -9874,
+    eventLoopTimedOutErr          = -9875,
+    eventLoopQuitErr              = -9876,
+    eventNotInQueueErr            = -9877,
+    eventHotKeyExistsErr          = -9878,
+    eventHotKeyInvalidErr         = -9879,
+    eventPassToNextTargetErr      = -9880
+}
 
 
 struct EventTypeSpec
@@ -58,12 +81,18 @@ extern (C) nothrow @nogc
 {
     alias da_GetMainEventLoop = EventLoopRef function();
     alias da_InstallEventHandler = OSStatus function(EventTargetRef, EventHandlerUPP, ItemCount, const(EventTypeSpec)*, void*, EventHandlerRef*);
+    alias da_GetEventClass = OSType function(EventRef inEvent);
+    alias da_GetEventKind = UInt32 function(EventRef inEvent);
+    alias da_GetEventParameter = OSStatus function(EventRef, EventParamName, EventParamType, EventParamType*, ByteCount, ByteCount*, void*);
 }
 
 __gshared
 {
     da_GetMainEventLoop GetMainEventLoop;
     da_InstallEventHandler InstallEventHandler;
+    da_GetEventClass GetEventClass;
+    da_GetEventKind GetEventKind;
+    da_GetEventParameter GetEventParameter;
 }
 
 extern(C) nothrow
@@ -72,7 +101,8 @@ extern(C) nothrow
     alias EventHandlerUPP = EventHandlerProcPtr;
 }
 
-// <HIToolbox/CarbonEvents.h.h>
+
+// <HIToolbox/CarbonEvents.h>
 
 enum : int
 {
@@ -170,20 +200,150 @@ enum : int
 }
 
 
+enum : int
+{
+    kEventRawKeyDown                = 1,
+    kEventRawKeyRepeat              = 2,
+    kEventRawKeyUp                  = 3,
+    kEventRawKeyModifiersChanged    = 4,
+    kEventHotKeyPressed             = 5,
+    kEventHotKeyReleased            = 6
+}
+
+enum : int
+{
+    kEventWindowUpdate                  = 1,
+    kEventWindowDrawContent             = 2,
+    kEventWindowActivated               = 5,
+    kEventWindowDeactivated             = 6,
+    kEventWindowHandleActivate          = 91,
+    kEventWindowHandleDeactivate        = 92,
+    kEventWindowGetClickActivation      = 7,
+    kEventWindowGetClickModality        = 8,
+    kEventWindowShowing                 = 22,
+    kEventWindowHiding                  = 23,
+    kEventWindowShown                   = 24,
+    kEventWindowHidden                  = 25,
+    kEventWindowCollapsing              = 86,
+    kEventWindowExpanding               = 87,
+    kEventWindowExpanded                = 70,
+    kEventWindowZoomed                  = 76,
+    kEventWindowBoundsChanging          = 26,
+    kEventWindowBoundsChanged           = 27,
+    kEventWindowResizeStarted           = 28,
+    kEventWindowResizeCompleted         = 29,
+    kEventWindowDragStarted             = 30,
+    kEventWindowDragCompleted           = 31,
+    kEventWindowClosed                  = 73,
+    kEventWindowTransitionStarted       = 88,
+    kEventWindowTransitionCompleted     = 89,
+    kEventWindowClickDragRgn            = 32,
+    kEventWindowClickResizeRgn          = 33,
+    kEventWindowClickCollapseRgn        = 34,
+    kEventWindowClickCloseRgn           = 35,
+    kEventWindowClickZoomRgn            = 36,
+    kEventWindowClickContentRgn         = 37,
+    kEventWindowClickProxyIconRgn       = 38,
+    kEventWindowClickToolbarButtonRgn   = 41,
+    kEventWindowClickStructureRgn       = 42,
+    kEventWindowCursorChange            = 40,
+    kEventWindowCollapse                = 66,
+    kEventWindowCollapsed               = 67,
+    kEventWindowCollapseAll             = 68,
+    kEventWindowExpand                  = 69,
+    kEventWindowExpandAll               = 71,
+    kEventWindowClose                   = 72,
+    kEventWindowCloseAll                = 74,
+    kEventWindowZoom                    = 75,
+    kEventWindowZoomAll                 = 77,
+    kEventWindowContextualMenuSelect    = 78,
+    kEventWindowPathSelect              = 79,
+    kEventWindowGetIdealSize            = 80,
+    kEventWindowGetMinimumSize          = 81,
+    kEventWindowGetMaximumSize          = 82,
+    kEventWindowConstrain               = 83,
+    kEventWindowRestoreFromDock         = 84,
+    kEventWindowHandleContentClick      = 85,
+    kEventWindowGetDockTileMenu         = 90,
+    kEventWindowGetIdealStandardState   = 93,
+    kEventWindowUpdateDockTile          = 94,
+    kEventWindowColorSpaceChanged       = 95,
+    kEventWindowRestoredAfterRelaunch   = 96,
+    kEventWindowProxyBeginDrag          = 128,
+    kEventWindowProxyEndDrag            = 129,
+    kEventWindowToolbarSwitchMode       = 150,
+    kEventWindowFocusAcquired           = 200,
+    kEventWindowFocusRelinquish         = 201,
+    kEventWindowFocusContent            = 202,
+    kEventWindowFocusToolbar            = 203,
+    kEventWindowFocusDrawer             = 204,
+    kEventWindowFocusLost               = 205,
+    kEventWindowFocusRestored           = 206,
+    kEventWindowSheetOpening            = 210,
+    kEventWindowSheetOpened             = 211,
+    kEventWindowSheetClosing            = 212,
+    kEventWindowSheetClosed             = 213,
+    kEventWindowDrawerOpening           = 220,
+    kEventWindowDrawerOpened            = 221,
+    kEventWindowDrawerClosing           = 222,
+    kEventWindowDrawerClosed            = 223,
+    kEventWindowGetFullScreenContentSize    = 240,
+    kEventWindowFullScreenEnterStarted      = 241,
+    kEventWindowFullScreenEnterCompleted    = 242,
+    kEventWindowFullScreenExitStarted       = 243,
+    kEventWindowFullScreenExitCompleted     = 244,
+    kEventWindowDrawFrame               = 1000,
+    kEventWindowDrawPart                = 1001,
+    kEventWindowGetRegion               = 1002,
+    kEventWindowHitTest                 = 1003,
+    kEventWindowInit                    = 1004,
+    kEventWindowDispose                 = 1005,
+    kEventWindowDragHilite              = 1006,
+    kEventWindowModified                = 1007,
+    kEventWindowSetupProxyDragImage     = 1008,
+    kEventWindowStateChanged            = 1009,
+    kEventWindowMeasureTitle            = 1010,
+    kEventWindowDrawGrowBox             = 1011,
+    kEventWindowGetGrowImageRegion      = 1012,
+    kEventWindowPaint                   = 1013,
+    kEventWindowAttributesChanged       = 1019,
+    kEventWindowTitleChanged            = 1020
+}
+
+enum : int
+{
+    kEventParamCGContextRef = CCONST('c', 'n', 't', 'x')
+}
+
+enum : int
+{
+    typeCGContextRef = CCONST('c', 'n', 't', 'x')
+}
+
 OSStatus InstallControlEventHandler(ControlRef target, EventHandlerUPP handler, ItemCount numTypes,
                                     const(EventTypeSpec)* list, void* userData, EventHandlerRef* outHandlerRef)
 {
     return InstallEventHandler(GetControlEventTarget(target), handler, numTypes, list, userData, outHandlerRef);
 }
 
+OSStatus InstallWindowEventHandler(WindowRef target, EventHandlerUPP handler, ItemCount numTypes,
+                                   const(EventTypeSpec)* list, void* userData, EventHandlerRef* outHandlerRef)
+{
+    return InstallEventHandler(GetWindowEventTarget(target), handler, numTypes, list, userData, outHandlerRef);
+}
+
+
+
 extern (C) nothrow @nogc
 {
     alias da_GetControlEventTarget = EventTargetRef function(ControlRef);
+    alias da_GetWindowEventTarget = EventTargetRef function(WindowRef);
 }
 
 __gshared
 {
     da_GetControlEventTarget GetControlEventTarget;
+    da_GetWindowEventTarget GetWindowEventTarget;
 }
 
 
@@ -214,6 +374,29 @@ enum : int
   kControlInvertsUpDownValueMeaning = 1 << 24
 }
 
+struct ControlID
+{
+    OSType              signature;
+    SInt32              id;
+}
+
+extern (C) nothrow @nogc
+{
+    alias da_GetRootControl = OSErr function(WindowRef, ControlRef*);
+    alias da_CreateRootControl = OSErr function(WindowRef inWindow, ControlRef* outControl);
+    alias da_EmbedControl = OSErr function(ControlRef inControl, ControlRef inContainer);
+    alias da_SizeControl = void function(ControlRef theControl, SInt16 w, SInt16 h);
+}
+
+__gshared
+{
+    da_GetRootControl GetRootControl;
+    da_CreateRootControl CreateRootControl;
+    da_EmbedControl EmbedControl;
+    da_SizeControl SizeControl;
+}
+
+
 
 // <HIToolbox/HIContainerViews.h>
 
@@ -232,7 +415,8 @@ __gshared
 // <HIToolbox/HIObject.h>
 
 alias ControlRef = void*;
-
+alias HIViewRef = ControlRef;
+alias HIViewID = ControlID;
 
 
 // <HIToolbox/HIView.h>
@@ -253,8 +437,23 @@ enum : int
   kHIViewFeatureIgnoresClicks   = 1 << 29
 }
 
+extern (C) nothrow @nogc
+{
+    alias da_HIViewGetRoot = HIViewRef function(WindowRef inWindow);
+    alias da_HIViewFindByID = OSStatus function(HIViewRef inStartView, HIViewID inID, HIViewRef* outView);
+    alias da_HIViewAddSubview = OSStatus function(HIViewRef inParent, HIViewRef inNewChild);
+}
 
+__gshared
+{
+    da_HIViewGetRoot HIViewGetRoot;
+    da_HIViewFindByID HIViewFindByID;
+    da_HIViewAddSubview HIViewAddSubview;
+}
 
+// <HIToolbox/HIWindowViews.h>
+
+static immutable HIViewID kHIViewWindowContentID = HIViewID(CCONST('w', 'i', 'n', 'd'), 1); // TODO: is it portable across OSX versions?
 
 // <HIToolbox/MacWindows.h>
 

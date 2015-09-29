@@ -46,10 +46,17 @@ struct Rect
 }
 
 alias EventHandlerCallRef = void*; // TODO: belongs to DerelictCF
-alias UInt32 = int; // TODO: belongs to DerelictCF
+alias UInt16 = ushort;
+alias SInt16 = short;
+alias UInt32 = uint; // TODO: belongs to DerelictCF
+alias SInt32 = int; // TODO: belongs to DerelictCF
 alias OSStatus = int; // TODO: belongs to DerelictCF
 alias OSType = uint; // ?
 alias ItemCount = c_ulong;
+alias ByteCount = c_ulong;
+alias OSErr = short;
+
+enum noErr = 0;
 
 
 alias WindowRef = void*; //?
