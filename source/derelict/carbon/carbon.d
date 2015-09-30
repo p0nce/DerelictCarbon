@@ -64,6 +64,7 @@ class DerelictCarbonLoader : SharedLibLoader
             bindFunc(cast(void**)&GetWindowAttributes, "GetWindowAttributes");
             bindFunc(cast(void**)&HIViewGetRoot, "HIViewGetRoot");
             bindFunc(cast(void**)&HIViewFindByID, "HIViewFindByID");
+            bindFunc(cast(void**)&HIViewSetNeedsDisplayInRect, "HIViewSetNeedsDisplayInRect");
             bindFunc(cast(void**)&HIViewAddSubview, "HIViewAddSubview");
             bindFunc(cast(void**)&GetRootControl, "GetRootControl");
             bindFunc(cast(void**)&CreateRootControl, "CreateRootControl");
@@ -72,6 +73,11 @@ class DerelictCarbonLoader : SharedLibLoader
             bindFunc(cast(void**)&GetEventClass, "GetEventClass");
             bindFunc(cast(void**)&GetEventKind, "GetEventKind");
             bindFunc(cast(void**)&GetEventParameter, "GetEventParameter");
+            bindFunc(cast(void**)&RemoveEventLoopTimer, "RemoveEventLoopTimer");
+            bindFunc(cast(void**)&RemoveEventHandler, "RemoveEventHandler");
+            bindFunc(cast(void**)&InstallEventLoopTimer, "InstallEventLoopTimer");
+            bindFunc(cast(void**)&HIPointConvert, "HIPointConvert");
+            bindFunc(cast(void**)&HIViewGetBounds, "HIViewGetBounds");
         }
     }
 }
@@ -82,12 +88,6 @@ __gshared DerelictCarbonLoader DerelictCarbon;
 shared static this()
 {
     DerelictCarbon = new DerelictCarbonLoader;
-}
-
-unittest
-{
-    static if(Derelict_OS_Mac)
-        DerelictCarbon.load();
 }
 
 

@@ -34,6 +34,7 @@ module derelict.carbon.hitoolbox;
 version(OSX):
 
 import derelict.carbon.types;
+import derelict.carbon.coregraphics;
 
 // <HIToolbox/CarbonEventsCore.h.h>
 
@@ -49,6 +50,7 @@ alias EventTime = double;
 alias EventTimeout = EventTime;
 alias EventTimerInterval = EventTime;
 
+enum EventTime kEventDurationSecond = 1.0;
 
 enum : int
 {
@@ -84,6 +86,11 @@ extern (C) nothrow @nogc
     alias da_GetEventClass = OSType function(EventRef inEvent);
     alias da_GetEventKind = UInt32 function(EventRef inEvent);
     alias da_GetEventParameter = OSStatus function(EventRef, EventParamName, EventParamType, EventParamType*, ByteCount, ByteCount*, void*);
+    alias da_InstallEventLoopTimer = OSStatus function(EventLoopRef, EventTimerInterval, EventTimerInterval,
+                                                       EventLoopTimerUPP, void*, EventLoopTimerRef*);
+
+    alias da_RemoveEventHandler = OSStatus function(EventHandlerRef);
+    alias da_RemoveEventLoopTimer = OSStatus function(EventLoopTimerRef);
 }
 
 __gshared
@@ -93,13 +100,19 @@ __gshared
     da_GetEventClass GetEventClass;
     da_GetEventKind GetEventKind;
     da_GetEventParameter GetEventParameter;
+    da_InstallEventLoopTimer InstallEventLoopTimer;
+    da_RemoveEventLoopTimer RemoveEventLoopTimer;
+    da_RemoveEventHandler RemoveEventHandler;
 }
+
 
 extern(C) nothrow
 {
     alias EventHandlerProcPtr = OSStatus function(EventHandlerCallRef inHandlerCallRef, EventRef inEvent, void *inUserData);
     alias EventHandlerUPP = EventHandlerProcPtr;
+    alias EventLoopTimerUPP = void function(EventLoopTimerRef inTimer, void* inUserData);
 }
+
 
 
 // <HIToolbox/CarbonEvents.h>
@@ -312,12 +325,101 @@ enum : int
 
 enum : int
 {
-    kEventParamCGContextRef = CCONST('c', 'n', 't', 'x')
+    kEventParamMouseLocation      = CCONST('m', 'l', 'o', 'c'),
+    kEventParamWindowMouseLocation = CCONST('w', 'm', 'o', 'u'),
+    kEventParamMouseButton        = CCONST('m', 'b', 't', 'n'),
+    kEventParamClickCount         = CCONST('c', 'c', 'n', 't'),
+    kEventParamMouseWheelAxis     = CCONST('m', 'w', 'a', 'x'),
+    kEventParamMouseWheelDelta    = CCONST('m', 'w', 'd', 'l'),
+    kEventParamMouseWheelSmoothVerticalDelta = CCONST('s', 'a', 'x', 'y'),
+    kEventParamMouseWheelSmoothHorizontalDelta = CCONST('s', 'a', 'x', 'x'),
+    kEventParamDirectionInverted  = CCONST('d', 'i', 'r', 'i'),
+    kEventParamMouseDelta         = CCONST('m', 'd', 't', 'a'),
+    kEventParamMouseChord         = CCONST('c', 'h', 'o', 'r'),
+    kEventParamTabletEventType    = CCONST('t', 'b', 'l', 't'),
+    kEventParamMouseTrackingRef   = CCONST('m', 't', 'r', 'f'),
+    typeMouseButton               = CCONST('m', 'b', 't', 'n'),
+    typeMouseWheelAxis            = CCONST('m', 'w', 'a', 'x'),
+    typeMouseTrackingRef          = CCONST('m', 't', 'r', 'f')
 }
 
 enum : int
 {
-    typeCGContextRef = CCONST('c', 'n', 't', 'x')
+    kEventParamWindowRef          = CCONST('w', 'i', 'n', 'd'),
+    kEventParamGrafPort           = CCONST('g', 'r', 'a', 'f'),
+    kEventParamMenuRef            = CCONST('m', 'e', 'n', 'u'),
+    kEventParamEventRef           = CCONST('e', 'v', 'n', 't'),
+    kEventParamControlRef         = CCONST('c', 't', 'r', 'l'),
+    kEventParamRgnHandle          = CCONST('r', 'g', 'n', 'h'),
+    kEventParamEnabled            = CCONST('e', 'n', 'a', 'b'),
+    kEventParamDimensions         = CCONST('d', 'i', 'm', 's'),
+    kEventParamBounds             = CCONST('b', 'o', 'u', 'n'),
+    kEventParamAvailableBounds    = CCONST('a', 'v', 'l', 'b'),
+//    kEventParamAEEventID          = keyAEEventID,
+//    kEventParamAEEventClass       = keyAEEventClass,
+    kEventParamCGContextRef       = CCONST('c', 'n', 't', 'x'),
+    kEventParamCGImageRef         = CCONST('c', 'g', 'i', 'm'),
+    kEventParamDeviceDepth        = CCONST('d', 'e', 'v', 'd'),
+    kEventParamDeviceColor        = CCONST('d', 'e', 'v', 'c'),
+    kEventParamMutableArray       = CCONST('m', 'a', 'r', 'r'),
+    kEventParamResult             = CCONST('a', 'n', 's', 'r'),
+    kEventParamMinimumSize        = CCONST('m', 'n', 's', 'z'),
+    kEventParamMaximumSize        = CCONST('m', 'x', 's', 'z'),
+    kEventParamAttributes         = CCONST('a', 't', 't', 'r'),
+    kEventParamReason             = CCONST('w', 'h', 'y', '?'),
+    kEventParamTransactionID      = CCONST('t', 'r', 'n', 's'),
+    kEventParamDisplayDevice      = CCONST('g', 'd', 'e', 'v'),
+//    kEventParamGDevice            = kEventParamDisplayDevice,
+    kEventParamIndex              = CCONST('i', 'n', 'd', 'x'),
+    kEventParamUserData           = CCONST('u', 's', 'r', 'd'),
+    kEventParamShape              = CCONST('s', 'h', 'a', 'p'),
+    typeWindowRef                 = CCONST('w', 'i', 'n', 'd'),
+    typeGrafPtr                   = CCONST('g', 'r', 'a', 'f'),
+    typeGWorldPtr                 = CCONST('g', 'w', 'l', 'd'),
+    typeMenuRef                   = CCONST('m', 'e', 'n', 'u'),
+    typeControlRef                = CCONST('c', 't', 'r', 'l'),
+    typeCollection                = CCONST('c', 'l', 't', 'n'),
+    typeQDRgnHandle               = CCONST('r', 'g', 'n', 'h'),
+    typeOSStatus                  = CCONST('o', 's', 's', 't'),
+    typeCFIndex                   = CCONST('c', 'f', 'i', 'x'),
+    typeCGContextRef              = CCONST('c', 'n', 't', 'x'),
+    typeCGImageRef                = CCONST('c', 'g', 'i', 'm'),
+    typeHIPoint                   = CCONST('h', 'i', 'p', 't'),
+    typeHISize                    = CCONST('h', 'i', 's', 'z'),
+    typeHIRect                    = CCONST('h', 'i', 'r', 'c'),
+    typeHIShapeRef                = CCONST('s', 'h', 'a', 'p'),
+    typeVoidPtr                   = CCONST('v', 'o', 'i', 'd'),
+    typeGDHandle                  = CCONST('g', 'd', 'e', 'v'),
+    typeCGDisplayID               = CCONST('c', 'g', 'i', 'd'),
+    typeCGFloat                   = CCONST('c', 'g', 'f', 'l'),
+    typeHIPoint72DPIGlobal        = CCONST('h', 'i', 'p', 'g'),
+    typeHIPointScreenPixel        = CCONST('h', 'i', 'p', 's'),
+    typeHISize72DPIGlobal         = CCONST('h', 'i', 's', 'g'),
+    typeHISizeScreenPixel         = CCONST('h', 'i', 's', 's'),
+    typeHIRect72DPIGlobal         = CCONST('h', 'i', 'r', 'g'),
+    typeHIRectScreenPixel         = CCONST('h', 'i', 'r', 's'),
+    typeCGFloat72DPIGlobal        = CCONST('h', 'i', 'f', 'g'),
+    typeCGFloatScreenPixel        = CCONST('h', 'i', 'f', 's'),
+    kEventParamDisplayChangeFlags = CCONST('c', 'g', 'd', 'p'),
+    typeCGDisplayChangeFlags      = CCONST('c', 'g', 'd', 'f')
+}
+
+enum : int
+{
+    kEventParamKeyCode            = CCONST('k', 'c', 'o', 'd'),
+    kEventParamKeyMacCharCodes    = CCONST('k', 'c', 'h', 'r'),
+    kEventParamKeyModifiers       = CCONST('k', 'm', 'o', 'd'),
+    kEventParamKeyUnicodes        = CCONST('k', 'u', 'n', 'i'),
+    kEventParamKeyboardType       = CCONST('k', 'b', 'd', 't'),
+    typeEventHotKeyID             = CCONST('h', 'k', 'i', 'd')
+}
+
+alias EventMouseButton = UInt16;
+enum : EventMouseButton
+{
+    kEventMouseButtonPrimary      = 1,
+    kEventMouseButtonSecondary    = 2,
+    kEventMouseButtonTertiary     = 3
 }
 
 OSStatus InstallControlEventHandler(ControlRef target, EventHandlerUPP handler, ItemCount numTypes,
@@ -331,6 +433,8 @@ OSStatus InstallWindowEventHandler(WindowRef target, EventHandlerUPP handler, It
 {
     return InstallEventHandler(GetWindowEventTarget(target), handler, numTypes, list, userData, outHandlerRef);
 }
+
+
 
 
 
@@ -397,6 +501,31 @@ __gshared
 }
 
 
+// <HIToolbox/Events.h>
+
+alias EventModifiers = ushort;
+enum
+{
+  activeFlagBit                 = 0,
+  btnStateBit                   = 7,
+  cmdKeyBit                     = 8,
+  shiftKeyBit                   = 9,
+  alphaLockBit                  = 10,
+  optionKeyBit                  = 11,
+  controlKeyBit                 = 12,
+}
+
+enum : EventModifiers
+{
+  activeFlag                    = 1 << activeFlagBit,
+  btnState                      = 1 << btnStateBit,
+  cmdKey                        = 1 << cmdKeyBit,
+  shiftKey                      = 1 << shiftKeyBit,
+  alphaLock                     = 1 << alphaLockBit,
+  optionKey                     = 1 << optionKeyBit,
+  controlKey                    = 1 << controlKeyBit
+}
+
 
 // <HIToolbox/HIContainerViews.h>
 
@@ -408,6 +537,31 @@ extern (C) nothrow @nogc
 __gshared
 {
     da_CreateUserPaneControl CreateUserPaneControl;
+}
+
+
+// <HIToolbox/HIGeometry.h>
+
+alias HIRect = CGRect;
+alias HIPoint = CGPoint;
+
+alias HICoordinateSpace = UInt32;
+enum : HICoordinateSpace
+{
+  kHICoordSpace72DPIGlobal      = 1,
+  kHICoordSpaceScreenPixel      = 2,
+  kHICoordSpaceWindow           = 3,
+  kHICoordSpaceView             = 4
+}
+
+extern (C) nothrow @nogc
+{
+    alias da_HIPointConvert = void function(HIPoint*, HICoordinateSpace, void*, HICoordinateSpace, void*);
+}
+
+__gshared
+{
+    da_HIPointConvert HIPointConvert;
 }
 
 
@@ -442,6 +596,8 @@ extern (C) nothrow @nogc
     alias da_HIViewGetRoot = HIViewRef function(WindowRef inWindow);
     alias da_HIViewFindByID = OSStatus function(HIViewRef inStartView, HIViewID inID, HIViewRef* outView);
     alias da_HIViewAddSubview = OSStatus function(HIViewRef inParent, HIViewRef inNewChild);
+    alias da_HIViewSetNeedsDisplayInRect = OSStatus function(HIViewRef, const(HIRect)*, Boolean);
+    alias da_HIViewGetBounds = OSStatus function(HIViewRef, HIRect* outRect);
 }
 
 __gshared
@@ -449,7 +605,10 @@ __gshared
     da_HIViewGetRoot HIViewGetRoot;
     da_HIViewFindByID HIViewFindByID;
     da_HIViewAddSubview HIViewAddSubview;
+    da_HIViewSetNeedsDisplayInRect HIViewSetNeedsDisplayInRect;
+    da_HIViewGetBounds HIViewGetBounds;
 }
+
 
 // <HIToolbox/HIWindowViews.h>
 

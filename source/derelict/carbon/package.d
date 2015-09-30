@@ -34,5 +34,6 @@ module derelict.carbon;
 public import derelict.carbon.types;
 public import derelict.carbon.carbon;
 public import derelict.carbon.hitoolbox;
+public import derelict.carbon.coreservices;
 public import derelict.carbon.coregraphics;
 

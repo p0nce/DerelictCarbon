@@ -29,47 +29,57 @@
 * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-module derelict.carbon.types;
+module derelict.carbon.coreservices;
+
+// TODO: this should go in its own Derelict package
 
 version(OSX):
 
-import core.stdc.config;
+import derelict.util.system;
+import derelict.util.loader;
 
-// TODO: put those types in the proper place
+import derelict.carbon.types;
 
-struct Rect
+static if(Derelict_OS_Mac)
+    enum libNames = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
+else
+    static assert(0, "Need to implement CoreServices libNames for this operating system.");
+
+
+class DerelictCoreServicesLoader : SharedLibLoader
 {
-    short left;
-    short top;
-    short right;
-    short bottom;
+    protected
+    {
+        this()
+        {
+            super(libNames);
+        }
+
+        override void loadSymbols()
+        {
+            //bindFunc(cast(void**)&CGContextDrawImage, "CGContextDrawImage");
+        }
+    }
 }
 
-alias EventHandlerCallRef = void*; // TODO: belongs to DerelictCF
-alias UInt16 = ushort;
-alias SInt16 = short;
-alias UInt32 = uint; // TODO: belongs to DerelictCF
-alias SInt32 = int; // TODO: belongs to DerelictCF
-alias OSStatus = int; // TODO: belongs to DerelictCF
-alias OSType = uint; // ?
-alias ItemCount = c_ulong;
-alias ByteCount = c_ulong;
-alias OSErr = short;
-alias Boolean = ubyte;
+__gshared DerelictCoreServicesLoader DerelictCoreServices;
 
-enum Boolean YES = 1;
-enum Boolean NO = 0;
-
-
-enum noErr = 0;
-
-
-alias WindowRef = void*; //?
-alias EventLoopTimerRef = void*; //?
-alias WindowAttributes = int;//?
-
-// To support character constants
-package int CCONST(int a, int b, int c, int d) pure nothrow
+shared static this()
 {
-    return (a << 24) | (b << 16) | (c << 8) | (d << 0);
+    DerelictCoreServices = new DerelictCoreServicesLoader;
 }
+
+enum : int
+{
+    typeSInt16                 = CCONST('s', 'h', 'o', 'r'),
+    typeUInt16                 = CCONST('u', 's', 'h', 'r'),
+    typeSInt32                 = CCONST('l', 'o', 'n', 'g'),
+    typeUInt32                 = CCONST('m', 'a', 'g', 'n'),
+    typeSInt64                 = CCONST('c', 'o', 'm', 'p'),
+    typeUInt64                 = CCONST('u', 'c', 'o', 'm'),
+    typeIEEE32BitFloatingPoint = CCONST('s', 'i', 'n', 'g'),
+    typeIEEE64BitFloatingPoint = CCONST('d', 'o', 'u', 'b'),
+    type128BitFloatingPoint    = CCONST('l', 'd', 'b', 'l'),
+    typeDecimalStruct          = CCONST('d', 'e', 'c', 'm')
+}
+

@@ -55,9 +55,15 @@ class DerelictCoreGraphicsLoader : SharedLibLoader
 
         override void loadSymbols()
         {
+            bindFunc(cast(void**)&CGColorSpaceCreateDeviceRGB, "CGColorSpaceCreateDeviceRGB");
+            bindFunc(cast(void**)&CGColorSpaceRelease, "CGColorSpaceRelease");
             bindFunc(cast(void**)&CGContextDrawImage, "CGContextDrawImage");
-            bindFunc(cast(void**)&CGImageCreate, "CGImageCreate");
+            bindFunc(cast(void**)&CGContextScaleCTM, "CGContextScaleCTM");
+            bindFunc(cast(void**)&CGContextTranslateCTM, "CGContextTranslateCTM");
+            bindFunc(cast(void**)&CGDataProviderCreateWithData, "CGDataProviderCreateWithData");
+            bindFunc(cast(void**)&CGDataProviderRelease, "CGDataProviderRelease");
             bindFunc(cast(void**)&CGImageRelease, "CGImageRelease");
+            bindFunc(cast(void**)&CGImageCreate, "CGImageCreate");
         }
     }
 }
@@ -69,11 +75,6 @@ shared static this()
     DerelictCoreGraphics = new DerelictCoreGraphicsLoader;
 }
 
-unittest
-{
-    static if(Derelict_OS_Mac)
-        DerelictCoreGraphics.load();
-}
 
 // <CoreGraphics/CGBase.h>
 
@@ -81,6 +82,75 @@ static if ((void*).sizeof > int.sizeof) // 64bit
     alias CGFloat = double;
 else
     alias CGFloat = float;
+
+
+// <CoreGraphics/CGColorSpace.h>
+
+alias CGColorSpaceRef = void*;
+
+alias CGColorRenderingIntent = int;
+enum : CGColorRenderingIntent
+{
+    kCGRenderingIntentDefault,
+    kCGRenderingIntentAbsoluteColorimetric,
+    kCGRenderingIntentRelativeColorimetric,
+    kCGRenderingIntentPerceptual,
+    kCGRenderingIntentSaturation
+}
+
+extern (C) nothrow @nogc
+{
+    alias da_CGColorSpaceCreateDeviceRGB = CGColorSpaceRef function();
+    alias da_CGColorSpaceRelease = void function(CGColorSpaceRef);
+}
+
+__gshared
+{
+    da_CGColorSpaceCreateDeviceRGB CGColorSpaceCreateDeviceRGB;
+    da_CGColorSpaceRelease CGColorSpaceRelease;
+}
+
+
+// <CoreGraphics/CGContext.h>
+
+alias CGContextRef = void*;
+
+extern (C) nothrow @nogc
+{
+    alias da_CGContextDrawImage = void function(CGContextRef, CGRect, CGImageRef);
+    alias da_CGContextScaleCTM = void function(CGContextRef, CGFloat, CGFloat);
+    alias da_CGContextTranslateCTM = void function(CGContextRef c, CGFloat sx, CGFloat sy);
+}
+
+__gshared
+{
+    da_CGContextDrawImage CGContextDrawImage;
+    da_CGContextScaleCTM CGContextScaleCTM;
+    da_CGContextTranslateCTM CGContextTranslateCTM;
+}
+
+
+
+// <CoreGraphics/CGDataProvider.h>
+
+alias CGDataProviderRef = void*;
+
+extern(C) nothrow
+{
+    alias CGDataProviderReleaseDataCallback = void function(void* info, const(void)* data, size_t size);
+}
+
+extern(C) nothrow @nogc
+{
+    alias da_CGDataProviderCreateWithData = CGDataProviderRef function(void*, const(void)*, size_t, CGDataProviderReleaseDataCallback);
+    alias da_CGDataProviderRelease = void function(CGDataProviderRef);
+}
+
+__gshared
+{
+    da_CGDataProviderCreateWithData CGDataProviderCreateWithData;
+    da_CGDataProviderRelease CGDataProviderRelease;
+}
 
 
 
@@ -94,8 +164,8 @@ struct CGPoint
 
 struct CGSize
 {
-    CGFloat location;
-    CGFloat length;
+    CGFloat width;
+    CGFloat height;
 }
 
 struct CGVector
@@ -114,39 +184,11 @@ static immutable CGPoint CGPointZero = CGPoint(0, 0);
 static immutable CGSize CGSizeZero = CGSize(0, 0);
 static immutable CGRect CGRectZero = CGRect(CGPoint(0, 0), CGSize(0, 0));
 
-
-
-// <CoreGraphics/CGContext.h>
-alias CGColorRenderingIntent = int;
-enum : CGColorRenderingIntent
+CGRect CGRectMake(CGFloat x, CGFloat y, CGFloat w, CGFloat h)
 {
-    kCGRenderingIntentDefault,
-    kCGRenderingIntentAbsoluteColorimetric,
-    kCGRenderingIntentRelativeColorimetric,
-    kCGRenderingIntentPerceptual,
-    kCGRenderingIntentSaturation
+    return CGRect(CGPoint(x, y), CGSize(w, h));
 }
 
-// <CoreGraphics/CGContext.h>
-
-alias CGContextRef = void*;
-alias CGColorSpaceRef = void*;
-
-extern (C) nothrow @nogc
-{
-    alias da_CGContextDrawImage = void function(CGContextRef, CGRect, CGImageRef);
-}
-
-__gshared
-{
-    da_CGContextDrawImage CGContextDrawImage;
-}
-
-
-
-// <CoreGraphics/CGDataProvider.h>
-
-alias CGDataProviderRef = void*;
 
 
 // <CoreGraphics/CGImage.h>
@@ -184,4 +226,6 @@ __gshared
     da_CGImageRelease CGImageRelease;
     da_CGImageCreate CGImageCreate;
 }
+
+
 
