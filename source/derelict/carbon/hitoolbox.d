@@ -33,13 +33,18 @@ module derelict.carbon.hitoolbox;
 
 version(OSX):
 
-import derelict.carbon.types;
+
+import derelict.carbon.corefoundation;
 import derelict.carbon.coregraphics;
+
+
+alias WindowRef = void*; // TODO: this actually belongs to QD framework
 
 // <HIToolbox/CarbonEventsCore.h.h>
 
 alias EventRef = void*;
 alias EventLoopRef = void*;
+alias EventLoopTimerRef = void*;
 alias EventHandlerRef = void*;
 alias EventHandlerCallRef = void*;
 alias EventTargetRef = void*;
@@ -616,7 +621,6 @@ static immutable HIViewID kHIViewWindowContentID = HIViewID(CCONST('w', 'i', 'n'
 
 // <HIToolbox/MacWindows.h>
 
-alias OptionBits = int;  //?
 alias WindowClass = int;
 alias WindowAttributes = OptionBits;
 

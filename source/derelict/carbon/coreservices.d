@@ -38,7 +38,7 @@ version(OSX):
 import derelict.util.system;
 import derelict.util.loader;
 
-import derelict.carbon.types;
+import derelict.carbon.corefoundation;
 
 static if(Derelict_OS_Mac)
     enum libNames = "/System/Library/Frameworks/CoreServices.framework/CoreServices";

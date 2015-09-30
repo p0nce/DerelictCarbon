@@ -38,6 +38,8 @@ version(OSX):
 import derelict.util.system;
 import derelict.util.loader;
 
+import derelict.carbon.corefoundation;
+
 static if(Derelict_OS_Mac)
     enum libNames = "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics";
 else
@@ -64,6 +66,7 @@ class DerelictCoreGraphicsLoader : SharedLibLoader
             bindFunc(cast(void**)&CGDataProviderRelease, "CGDataProviderRelease");
             bindFunc(cast(void**)&CGImageRelease, "CGImageRelease");
             bindFunc(cast(void**)&CGImageCreate, "CGImageCreate");
+            bindFunc(cast(void**)&CGColorSpaceCreateWithName, "CGColorSpaceCreateWithName");
         }
     }
 }
@@ -102,12 +105,14 @@ extern (C) nothrow @nogc
 {
     alias da_CGColorSpaceCreateDeviceRGB = CGColorSpaceRef function();
     alias da_CGColorSpaceRelease = void function(CGColorSpaceRef);
+    alias da_CGColorSpaceCreateWithName = CGColorSpaceRef function(CFStringRef);
 }
 
 __gshared
 {
     da_CGColorSpaceCreateDeviceRGB CGColorSpaceCreateDeviceRGB;
     da_CGColorSpaceRelease CGColorSpaceRelease;
+    da_CGColorSpaceCreateWithName CGColorSpaceCreateWithName;
 }
 
 
@@ -195,7 +200,6 @@ CGRect CGRectMake(CGFloat x, CGFloat y, CGFloat w, CGFloat h)
 
 alias CGImageRef = void*;
 
-
 alias CGBitmapInfo = uint;
 enum : CGBitmapInfo
 {
@@ -208,7 +212,6 @@ enum : CGBitmapInfo
     kCGBitmapByteOrder16Big = (3 << 12),
     kCGBitmapByteOrder32Big = (4 << 12)
 }
-
 
 extern (C) nothrow @nogc
 {
