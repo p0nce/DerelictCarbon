@@ -217,6 +217,13 @@ enum : int
     kEventMouseScroll               = 11
 }
 
+alias EventMouseWheelAxis = UInt16;
+enum : EventMouseWheelAxis
+{
+    kEventMouseWheelAxisX         = 0,
+    kEventMouseWheelAxisY         = 1
+}
+
 
 enum : int
 {
