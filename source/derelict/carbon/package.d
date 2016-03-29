@@ -36,4 +36,5 @@ public import derelict.carbon.corefoundation;
 public import derelict.carbon.hitoolbox;
 public import derelict.carbon.coreservices;
 public import derelict.carbon.coregraphics;
+public import derelict.carbon.audiounit;
 

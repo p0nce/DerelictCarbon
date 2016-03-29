@@ -35,6 +35,8 @@ module derelict.carbon.coreservices;
 
 version(OSX):
 
+import core.stdc.config;
+
 import derelict.util.system;
 import derelict.util.loader;
 
@@ -57,7 +59,7 @@ class DerelictCoreServicesLoader : SharedLibLoader
 
         override void loadSymbols()
         {
-            //bindFunc(cast(void**)&CGContextDrawImage, "CGContextDrawImage");
+            bindFunc(cast(void**)&SetComponentInstanceStorage, "SetComponentInstanceStorage");
         }
     }
 }
@@ -82,4 +84,55 @@ enum : int
     type128BitFloatingPoint    = CCONST('l', 'd', 'b', 'l'),
     typeDecimalStruct          = CCONST('d', 'e', 'c', 'm')
 }
+
+// <CarbonCore/Components.h>
+
+// LP64 => "long and pointers are 64-bit"
+static if (size_t.sizeof == 8 && c_long.sizeof == 8)
+    private enum __LP64__ = 1;
+else
+    private enum __LP64__ = 0;
+
+alias ComponentResult = int;
+
+alias ComponentInstance = void*;
+
+struct ComponentParameters
+{
+    UInt8               flags;
+    UInt8               paramSize;
+    SInt16              what;
+    static if (__LP64__)
+        UInt32          padding;
+    c_long[1]           params;
+}
+
+static if (__LP64__)
+{
+    static assert(ComponentParameters.sizeof == 16);
+}
+
+enum : int {
+  kComponentOpenSelect          = -1,
+  kComponentCloseSelect         = -2,
+  kComponentCanDoSelect         = -3,
+  kComponentVersionSelect       = -4,
+  kComponentRegisterSelect      = -5,
+  kComponentTargetSelect        = -6,
+  kComponentUnregisterSelect    = -7,
+  kComponentGetMPWorkFunctionSelect = -8,
+  kComponentExecuteWiredActionSelect = -9,
+  kComponentGetPublicResourceSelect = -10
+};
+
+extern(C) nothrow @nogc
+{
+    alias da_SetComponentInstanceStorage = void function(ComponentInstance, Handle);
+}
+
+__gshared
+{
+    da_SetComponentInstanceStorage SetComponentInstanceStorage;
+}
+
 
