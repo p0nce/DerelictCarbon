@@ -60,6 +60,7 @@ class DerelictCoreServicesLoader : SharedLibLoader
         override void loadSymbols()
         {
             bindFunc(cast(void**)&SetComponentInstanceStorage, "SetComponentInstanceStorage");
+            bindFunc(cast(void**)&GetComponentInfo, "GetComponentInfo");
         }
     }
 }
@@ -85,6 +86,13 @@ enum : int
     typeDecimalStruct          = CCONST('d', 'e', 'c', 'm')
 }
 
+// <CarbonCore/MacErrors.h>
+enum : int
+{
+  badComponentInstance = cast(int)0x80008001,
+  badComponentSelector = cast(int)0x80008002
+}
+
 // <CarbonCore/Components.h>
 
 // LP64 => "long and pointers are 64-bit"
@@ -93,6 +101,7 @@ static if (size_t.sizeof == 8 && c_long.sizeof == 8)
 else
     private enum __LP64__ = 0;
 
+alias Component = void*;
 alias ComponentResult = int;
 
 alias ComponentInstance = void*;
@@ -112,27 +121,39 @@ static if (__LP64__)
     static assert(ComponentParameters.sizeof == 16);
 }
 
-enum : int {
-  kComponentOpenSelect          = -1,
-  kComponentCloseSelect         = -2,
-  kComponentCanDoSelect         = -3,
-  kComponentVersionSelect       = -4,
-  kComponentRegisterSelect      = -5,
-  kComponentTargetSelect        = -6,
-  kComponentUnregisterSelect    = -7,
-  kComponentGetMPWorkFunctionSelect = -8,
-  kComponentExecuteWiredActionSelect = -9,
-  kComponentGetPublicResourceSelect = -10
+enum : int
+{
+    kComponentOpenSelect          = -1,
+    kComponentCloseSelect         = -2,
+    kComponentCanDoSelect         = -3,
+    kComponentVersionSelect       = -4,
+    kComponentRegisterSelect      = -5,
+    kComponentTargetSelect        = -6,
+    kComponentUnregisterSelect    = -7,
+    kComponentGetMPWorkFunctionSelect = -8,
+    kComponentExecuteWiredActionSelect = -9,
+    kComponentGetPublicResourceSelect = -10
 };
+
+struct ComponentDescription
+{
+    OSType              componentType;
+    OSType              componentSubType;
+    OSType              componentManufacturer;
+    UInt32              componentFlags;
+    UInt32              componentFlagsMask;
+}
 
 extern(C) nothrow @nogc
 {
     alias da_SetComponentInstanceStorage = void function(ComponentInstance, Handle);
+    alias da_GetComponentInfo = OSErr function(Component, ComponentDescription*, Handle, Handle, Handle);
 }
 
 __gshared
 {
     da_SetComponentInstanceStorage SetComponentInstanceStorage;
+    da_GetComponentInfo GetComponentInfo;
 }
 
 

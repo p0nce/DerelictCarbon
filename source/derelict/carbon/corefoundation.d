@@ -57,7 +57,26 @@ class DerelictCoreFoundationLoader : SharedLibLoader
 
         override void loadSymbols()
         {
+            bindFunc(cast(void**)&CFRetain, "CFRetain");
+            bindFunc(cast(void**)&CFRelease, "CFRelease");
+            bindFunc(cast(void**)&CFEqual, "CFEqual");
+            bindFunc(cast(void**)&CFHash, "CFHash");
+
             bindFunc(cast(void**)&CFStringCreateWithCString, "CFStringCreateWithCString");
+            bindFunc(cast(void**)&CFStringGetLength, "CFStringGetLength");
+            bindFunc(cast(void**)&CFStringGetCString, "CFStringGetCString");
+
+            bindFunc(cast(void**)&CFDataCreate, "CFDataCreate");
+            bindFunc(cast(void**)&CFDataGetLength, "CFDataGetLength");
+            bindFunc(cast(void**)&CFDataGetBytePtr, "CFDataGetBytePtr");
+
+            bindFunc(cast(void**)&CFDictionaryCreateMutable, "CFDictionaryCreateMutable");
+            bindFunc(cast(void**)&CFDictionaryGetValue, "CFDictionaryGetValue");
+            bindFunc(cast(void**)&CFDictionarySetValue, "CFDictionarySetValue");
+
+            bindFunc(cast(void**)&CFNumberCreate, "CFNumberCreate");
+            bindFunc(cast(void**)&CFNumberGetValue, "CFNumberGetValue");
+
         }
     }
 }
@@ -238,6 +257,22 @@ struct Rect
 }
 alias RectPtr = Rect*;
 
+extern(C) nothrow @nogc
+{
+    alias da_CFRetain = CFTypeRef function(CFTypeRef cf);
+    alias da_CFRelease = void function(CFTypeRef cf);
+    alias da_CFEqual = Boolean function(CFTypeRef cf1, CFTypeRef cf2);
+    alias da_CFHash = CFHashCode function(CFTypeRef cf);
+}
+
+__gshared
+{
+    da_CFRetain CFRetain;
+    da_CFRelease CFRelease;
+    da_CFEqual CFEqual;
+    da_CFHash CFHash;
+}
+
 
 // <CoreFoundation/CFString.h>
 
@@ -266,13 +301,118 @@ enum : CFStringBuiltInEncodings
 extern(C) nothrow @nogc
 {
     alias da_CFStringCreateWithCString = CFStringRef function(CFAllocatorRef, const(char)*, CFStringEncoding);
+    alias da_CFStringGetLength = CFIndex function(CFStringRef);
+    alias da_CFStringGetCString = Boolean function(CFStringRef, char*, CFIndex, CFStringEncoding);
 }
 
 __gshared
 {
     da_CFStringCreateWithCString CFStringCreateWithCString;
+    da_CFStringGetLength CFStringGetLength;
+    da_CFStringGetCString CFStringGetCString;
 }
 
 
+// <CoreFoundation/CFData.h>
 
+alias CFDataRef = void*;
+alias CFMutableDataRef = void*;
 
+extern(C) nothrow @nogc
+{
+    alias da_CFDataCreate = CFDataRef function(CFAllocatorRef allocator, const(UInt8)* bytes, CFIndex length);
+
+    alias da_CFDataGetLength = CFIndex function(CFDataRef theData);
+    alias da_CFDataGetBytePtr = const(UInt8)* function(CFDataRef theData);
+}
+
+__gshared
+{
+    da_CFDataCreate CFDataCreate;
+    da_CFDataGetLength CFDataGetLength;
+    da_CFDataGetBytePtr CFDataGetBytePtr;
+}
+
+// <CoreFoundation/CFDictionary.h>
+
+extern(C) nothrow @nogc
+{
+    alias CFDictionaryRetainCallBack = const(void)* function(CFAllocatorRef allocator, const(void)* value);
+    alias CFDictionaryReleaseCallBack = void function(CFAllocatorRef allocator, const(void)* value);
+    alias CFDictionaryCopyDescriptionCallBack = CFStringRef function(const(void)* value);
+    alias CFDictionaryEqualCallBack = Boolean function(const(void)* value1, const(void)* value2);
+    alias CFDictionaryHashCallBack = CFHashCode function(const(void)* value);
+}
+
+struct CFDictionaryKeyCallBacks
+{
+    CFIndex             version_;
+    CFDictionaryRetainCallBack      retain;
+    CFDictionaryReleaseCallBack     release;
+    CFDictionaryCopyDescriptionCallBack copyDescription;
+    CFDictionaryEqualCallBack       equal;
+    CFDictionaryHashCallBack        hash;
+}
+
+struct CFDictionaryValueCallBacks
+{
+    CFIndex             version_;
+    CFDictionaryRetainCallBack      retain;
+    CFDictionaryReleaseCallBack     release;
+    CFDictionaryCopyDescriptionCallBack copyDescription;
+    CFDictionaryEqualCallBack       equal;
+}
+
+alias CFDictionaryRef = void*;
+alias CFMutableDictionaryRef = void*;
+
+extern(C) nothrow @nogc
+{
+    alias da_CFDictionaryCreateMutable = CFMutableDictionaryRef function(CFAllocatorRef, CFIndex, const(CFDictionaryKeyCallBacks)*, const(CFDictionaryValueCallBacks)*);
+    alias da_CFDictionaryGetValue = const(void)* function(CFDictionaryRef theDict, const(void) *key);
+    alias da_CFDictionarySetValue = void function(CFMutableDictionaryRef theDict, const(void)* key, const(void)* value);
+}
+
+__gshared
+{
+    da_CFDictionaryCreateMutable CFDictionaryCreateMutable;
+    da_CFDictionaryGetValue CFDictionaryGetValue;
+    da_CFDictionarySetValue CFDictionarySetValue;
+}
+
+// <CoreFoundation/CFNumber.h>
+
+alias CFNumberRef = void*;
+
+enum CFNumberType : CFIndex
+{
+    kCFNumberSInt8Type = 1,
+    kCFNumberSInt16Type = 2,
+    kCFNumberSInt32Type = 3,
+    kCFNumberSInt64Type = 4,
+    kCFNumberFloat32Type = 5,
+    kCFNumberFloat64Type = 6,
+    kCFNumberCharType = 7,
+    kCFNumberShortType = 8,
+    kCFNumberIntType = 9,
+    kCFNumberLongType = 10,
+    kCFNumberLongLongType = 11,
+    kCFNumberFloatType = 12,
+    kCFNumberDoubleType = 13,
+    kCFNumberCFIndexType = 14,
+    kCFNumberNSIntegerType = 15,
+    kCFNumberCGFloatType = 16,
+    kCFNumberMaxType = 16
+}
+
+extern(C) nothrow @nogc
+{
+    alias da_CFNumberCreate = CFNumberRef function(CFAllocatorRef allocator, CFNumberType theType, const(void) *valuePtr);
+    alias da_CFNumberGetValue = Boolean function(CFNumberRef number, CFNumberType theType, void *valuePtr);
+}
+
+__gshared
+{
+    da_CFNumberCreate CFNumberCreate;
+    da_CFNumberGetValue CFNumberGetValue;
+}
