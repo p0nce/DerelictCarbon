@@ -61,10 +61,22 @@ class DerelictCoreFoundationLoader : SharedLibLoader
             bindFunc(cast(void**)&CFRelease, "CFRelease");
             bindFunc(cast(void**)&CFEqual, "CFEqual");
             bindFunc(cast(void**)&CFHash, "CFHash");
+            bindFunc(cast(void**)&CFCopyDescription, "CFCopyDescription");
+
+            bindFunc(cast(void**)&CFArrayCreateMutable, "CFArrayCreateMutable");
+            bindFunc(cast(void**)&CFArrayAppendValue, "CFArrayAppendValue");
+
+            bindFunc(cast(void**)&CFAllocatorAllocate, "CFAllocatorAllocate");
+            bindFunc(cast(void**)&CFAllocatorDeallocate, "CFAllocatorDeallocate");
 
             bindFunc(cast(void**)&CFStringCreateWithCString, "CFStringCreateWithCString");
             bindFunc(cast(void**)&CFStringGetLength, "CFStringGetLength");
             bindFunc(cast(void**)&CFStringGetCString, "CFStringGetCString");
+            bindFunc(cast(void**)&CFStringCreateCopy, "CFStringCreateCopy");
+            bindFunc(cast(void**)&CFStringCompare, "CFStringCompare");
+            bindFunc(cast(void**)&CFStringCreateWithFormat, "CFStringCreateWithFormat");
+
+
 
             bindFunc(cast(void**)&CFDataCreate, "CFDataCreate");
             bindFunc(cast(void**)&CFDataGetLength, "CFDataGetLength");
@@ -77,6 +89,33 @@ class DerelictCoreFoundationLoader : SharedLibLoader
             bindFunc(cast(void**)&CFNumberCreate, "CFNumberCreate");
             bindFunc(cast(void**)&CFNumberGetValue, "CFNumberGetValue");
 
+            /*with (kCFAUPresetArrayCallBacks)
+            {
+                version_ = 0;
+                retain = &myRetainCallBack;
+                release = &myReleaseCallBack;
+                copyDescription = CFCopyDescription;
+                equal = CFEqual;
+            }*/
+
+            with (kCFTypeDictionaryKeyCallBacks)
+            {
+                version_ = 0;
+                retain = &myRetainCallBack;
+                release = &myReleaseCallBack;
+                copyDescription = CFCopyDescription;
+                equal = CFEqual;
+                hash = CFHash;
+            }
+
+            with (kCFTypeDictionaryValueCallBacks)
+            {
+                version_ = 0;
+                retain = &myRetainCallBack;
+                release = &myReleaseCallBack;
+                copyDescription = CFCopyDescription;
+                equal = CFEqual;
+            }
         }
     }
 }
@@ -225,6 +264,8 @@ alias CFStringRef = void*;
 alias CFMutableStringRef = void*;
 alias CFAllocatorRef = void*;
 
+enum CFAllocatorRef kCFAllocatorDefault = null;
+
 alias CFPropertyListRef = CFTypeRef;
 
 
@@ -237,6 +278,14 @@ struct CFRange
 CFRange CFRangeMake(CFIndex loc, CFIndex len)
 {
     return CFRange(loc, len);
+}
+
+alias CFComparisonResult = CFIndex;
+enum : CFComparisonResult
+{
+    kCFCompareLessThan = -1,
+    kCFCompareEqualTo = 0,
+    kCFCompareGreaterThan = 1
 }
 
 alias CFNullRef = const(void)*;
@@ -263,6 +312,7 @@ extern(C) nothrow @nogc
     alias da_CFRelease = void function(CFTypeRef cf);
     alias da_CFEqual = Boolean function(CFTypeRef cf1, CFTypeRef cf2);
     alias da_CFHash = CFHashCode function(CFTypeRef cf);
+    alias da_CFCopyDescription = CFStringRef function(CFTypeRef cf);
 }
 
 __gshared
@@ -271,45 +321,63 @@ __gshared
     da_CFRelease CFRelease;
     da_CFEqual CFEqual;
     da_CFHash CFHash;
+    da_CFCopyDescription CFCopyDescription;
 }
 
-
-// <CoreFoundation/CFString.h>
-
-alias CFStringEncoding = UInt32;
-alias CFStringBuiltInEncodings = CFStringEncoding;
-enum : CFStringBuiltInEncodings
-{
-    kCFStringEncodingMacRoman = 0,
-    kCFStringEncodingWindowsLatin1 = 0x0500,
-    kCFStringEncodingISOLatin1 = 0x0201,
-    kCFStringEncodingNextStepLatin = 0x0B01,
-    kCFStringEncodingASCII = 0x0600,
-    kCFStringEncodingUnicode = 0x0100,
-    kCFStringEncodingUTF8 = 0x08000100,
-    kCFStringEncodingNonLossyASCII = 0x0BFF,
-
-    kCFStringEncodingUTF16 = 0x0100,
-    kCFStringEncodingUTF16BE = 0x10000100,
-    kCFStringEncodingUTF16LE = 0x14000100,
-
-    kCFStringEncodingUTF32 = 0x0c000100,
-    kCFStringEncodingUTF32BE = 0x18000100,
-    kCFStringEncodingUTF32LE = 0x1c000100
-}
 
 extern(C) nothrow @nogc
 {
-    alias da_CFStringCreateWithCString = CFStringRef function(CFAllocatorRef, const(char)*, CFStringEncoding);
-    alias da_CFStringGetLength = CFIndex function(CFStringRef);
-    alias da_CFStringGetCString = Boolean function(CFStringRef, char*, CFIndex, CFStringEncoding);
+    alias da_CFAllocatorAllocate = void* function(CFAllocatorRef allocator, CFIndex size, CFOptionFlags hint);
+    alias da_CFAllocatorDeallocate = void function(CFAllocatorRef allocator, void *ptr);
 }
 
 __gshared
 {
-    da_CFStringCreateWithCString CFStringCreateWithCString;
-    da_CFStringGetLength CFStringGetLength;
-    da_CFStringGetCString CFStringGetCString;
+    da_CFAllocatorAllocate CFAllocatorAllocate;
+    da_CFAllocatorDeallocate CFAllocatorDeallocate;
+}
+
+
+
+// <CoreFoundation/CFArray.h>
+
+alias CFArrayRef = void*;
+alias CFMutableArrayRef = void*;
+
+extern(C) nothrow @nogc
+{
+    alias CFArrayRetainCallBack = const(void)* function(CFAllocatorRef allocator, const(void)* value);
+    alias CFArrayReleaseCallBack = void function(CFAllocatorRef allocator, const(void)* value);
+    alias CFArrayEqualCallBack = Boolean function(const(void)* value1, const(void)* value2);
+}
+
+// This one isn't forced to be @nogc (this is arbitrary, only nothrow is needed)
+extern(C) nothrow
+{
+    alias CFArrayCopyDescriptionCallBack = CFStringRef function(const(void)* value);
+}
+
+struct CFArrayCallBacks
+{
+    CFIndex             version_;
+    CFArrayRetainCallBack       retain;
+    CFArrayReleaseCallBack      release;
+    CFArrayCopyDescriptionCallBack  copyDescription;
+    CFArrayEqualCallBack        equal;
+}
+
+//__gshared CFArrayCallBacks kCFAUPresetArrayCallBacks;
+
+extern(C) nothrow @nogc
+{
+    alias da_CFArrayCreateMutable = CFMutableArrayRef function(CFAllocatorRef allocator, CFIndex capacity, const(CFArrayCallBacks)* callBacks);
+    alias da_CFArrayAppendValue = void function(CFMutableArrayRef theArray, const(void)* value);
+}
+
+__gshared
+{
+    da_CFArrayCreateMutable CFArrayCreateMutable;
+    da_CFArrayAppendValue CFArrayAppendValue;
 }
 
 
@@ -344,6 +412,23 @@ extern(C) nothrow @nogc
     alias CFDictionaryHashCallBack = CFHashCode function(const(void)* value);
 }
 
+
+// Dictionnaries callback
+private extern(C) nothrow @nogc
+{
+    const(void)* myRetainCallBack(CFAllocatorRef allocator, const(void)* value)
+    {
+        // TODO: not sure what to do with the allocator
+        return CFRetain(value);
+    }
+
+    void myReleaseCallBack(CFAllocatorRef allocator, const(void)* value)
+    {
+        // TODO: not sure what to do with the allocator
+        return CFRelease(value);
+    }
+}
+
 struct CFDictionaryKeyCallBacks
 {
     CFIndex             version_;
@@ -354,6 +439,8 @@ struct CFDictionaryKeyCallBacks
     CFDictionaryHashCallBack        hash;
 }
 
+__gshared CFDictionaryKeyCallBacks kCFTypeDictionaryKeyCallBacks;
+
 struct CFDictionaryValueCallBacks
 {
     CFIndex             version_;
@@ -362,6 +449,8 @@ struct CFDictionaryValueCallBacks
     CFDictionaryCopyDescriptionCallBack copyDescription;
     CFDictionaryEqualCallBack       equal;
 }
+
+__gshared CFDictionaryValueCallBacks kCFTypeDictionaryValueCallBacks;
 
 alias CFDictionaryRef = void*;
 alias CFMutableDictionaryRef = void*;
@@ -384,7 +473,8 @@ __gshared
 
 alias CFNumberRef = void*;
 
-enum CFNumberType : CFIndex
+alias CFNumberType = CFIndex;
+enum : CFNumberType
 {
     kCFNumberSInt8Type = 1,
     kCFNumberSInt16Type = 2,
@@ -416,3 +506,65 @@ __gshared
     da_CFNumberCreate CFNumberCreate;
     da_CFNumberGetValue CFNumberGetValue;
 }
+
+// <CoreFoundation/CFString.h>
+
+alias CFStringEncoding = UInt32;
+alias CFStringBuiltInEncodings = CFStringEncoding;
+enum : CFStringBuiltInEncodings
+{
+    kCFStringEncodingMacRoman = 0,
+    kCFStringEncodingWindowsLatin1 = 0x0500,
+    kCFStringEncodingISOLatin1 = 0x0201,
+    kCFStringEncodingNextStepLatin = 0x0B01,
+    kCFStringEncodingASCII = 0x0600,
+    kCFStringEncodingUnicode = 0x0100,
+    kCFStringEncodingUTF8 = 0x08000100,
+    kCFStringEncodingNonLossyASCII = 0x0BFF,
+
+    kCFStringEncodingUTF16 = 0x0100,
+    kCFStringEncodingUTF16BE = 0x10000100,
+    kCFStringEncodingUTF16LE = 0x14000100,
+
+    kCFStringEncodingUTF32 = 0x0c000100,
+    kCFStringEncodingUTF32BE = 0x18000100,
+    kCFStringEncodingUTF32LE = 0x1c000100
+}
+
+alias CFStringCompareFlags = CFOptionFlags;
+enum : CFStringCompareFlags
+{
+    kCFCompareCaseInsensitive = 1,
+    kCFCompareBackwards = 4,
+    kCFCompareAnchored = 8,
+    kCFCompareNonliteral = 16,
+    kCFCompareLocalized = 32,
+    kCFCompareNumerically = 64,
+    kCFCompareDiacriticInsensitive = 128,
+    kCFCompareWidthInsensitive = 256,
+    kCFCompareForcedOrdering = 512
+}
+
+extern(C) nothrow @nogc
+{
+    alias da_CFStringCreateWithCString = CFStringRef function(CFAllocatorRef, const(char)*, CFStringEncoding);
+    alias da_CFStringGetLength = CFIndex function(CFStringRef);
+    alias da_CFStringGetCString = Boolean function(CFStringRef, char*, CFIndex, CFStringEncoding);
+    alias da_CFStringCreateCopy = CFStringRef function(CFAllocatorRef alloc, CFStringRef theString);
+    alias da_CFStringCompare = CFComparisonResult function(CFStringRef theString1, CFStringRef theString2, CFStringCompareFlags compareOptions);
+    alias da_CFStringCreateWithFormat = CFStringRef function(CFAllocatorRef alloc, CFDictionaryRef formatOptions, CFStringRef format, ...);
+}
+
+__gshared
+{
+    da_CFStringCreateWithCString CFStringCreateWithCString;
+    da_CFStringGetLength CFStringGetLength;
+    da_CFStringGetCString CFStringGetCString;
+    da_CFStringCreateCopy CFStringCreateCopy;
+    da_CFStringCompare CFStringCompare;
+    da_CFStringCreateWithFormat CFStringCreateWithFormat;
+}
+
+// <CoreFoundation/CFURL.h>
+
+alias CFURLRef = void*;

@@ -89,9 +89,15 @@ enum : int
 // <CarbonCore/MacErrors.h>
 enum : int
 {
-  badComponentInstance = cast(int)0x80008001,
-  badComponentSelector = cast(int)0x80008002
+    badComponentInstance = cast(int)0x80008001,
+    badComponentSelector = cast(int)0x80008002
 }
+
+enum
+{
+    coreFoundationUnknownErr      = -4960,
+}
+
 
 // <CarbonCore/Components.h>
 

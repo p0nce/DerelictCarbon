@@ -61,6 +61,8 @@ class DerelictAudioUnitLoader : SharedLibLoader
         override void loadSymbols()
         {
             bindFunc(cast(void**)&AudioUnitGetProperty, "AudioUnitGetProperty");
+            bindFunc(cast(void**)&AudioUnitRender, "AudioUnitRender");
+
         }
     }
 }
@@ -106,7 +108,7 @@ alias AudioUnitElement = uint;
 alias AudioUnitParameterID = uint;
 alias AudioUnitParameterValue = float;
 
-extern(C) nothrow
+extern(C) nothrow @nogc
 {
     alias AURenderCallback = OSStatus function(void *                          inRefCon,
                                                AudioUnitRenderActionFlags *    ioActionFlags,
@@ -114,6 +116,12 @@ extern(C) nothrow
                                                UInt32                          inBusNumber,
                                                UInt32                          inNumberFrames,
                                                AudioBufferList *               ioData);
+
+    alias AudioUnitPropertyListenerProc = void function(void *              inRefCon,
+                                                        AudioUnit           inUnit,
+                                                        AudioUnitPropertyID inID,
+                                                        AudioUnitScope      inScope,
+                                                        AudioUnitElement    inElement);
 }
 
 alias AudioUnitRenderActionFlags = uint;
@@ -191,7 +199,7 @@ struct AudioUnitParameterEvent
     EventValues eventValues;
 }
 
-extern(C) nothrow
+extern(C) nothrow @nogc
 {
     alias AudioUnitGetParameterProc = OSStatus function(
                                 void *                      inComponentStorage,
@@ -215,6 +223,11 @@ extern(C) nothrow
                                 UInt32                          inOutputBusNumber,
                                 UInt32                          inNumberFrames,
                                 AudioBufferList *               ioData);
+}
+
+__gshared
+{
+    AudioUnitRenderProc AudioUnitRender;
 }
 
 extern(C) nothrow @nogc
@@ -300,6 +313,13 @@ enum : AudioUnitPropertyID
     kAudioUnitProperty_MIDIOutputCallback           = 48,
 }
 
+enum : AudioUnitPropertyID
+{
+    kMusicDeviceProperty_InstrumentCount            = 1000,
+    kMusicDeviceProperty_BankName                   = 1007,
+    kMusicDeviceProperty_SoundBankURL               = 1100
+}
+
 static immutable string
     kAUPresetVersionKey       = "version",
     kAUPresetTypeKey          = "type",
@@ -315,6 +335,30 @@ static immutable string
     kAUPresetVSTPresetKey     = "vstpreset",
     kAUPresetMASDataKey       = "masdata",
     kAUPresetPartKey          = "part";
+
+version(BigEndian)
+    struct AUNumVersion
+    {
+        UInt8               majorRev;
+        UInt8               minorAndBugRev;
+        UInt8               stage;
+        UInt8               nonRelRev;
+    }
+
+version(LittleEndian)
+    struct AUNumVersion
+    {
+        UInt8               nonRelRev;
+        UInt8               stage;
+        UInt8               minorAndBugRev;
+        UInt8               majorRev;
+    }
+
+struct AUHostIdentifier
+{
+    CFStringRef         hostName;
+    AUNumVersion        hostVersion;
+}
 
 struct AudioUnitConnection
 {
@@ -335,6 +379,14 @@ struct AURenderCallbackStruct
     void* inputProcRefCon;
 }
 
+
+
+struct AUPreset
+{
+    SInt32      presetNumber;
+    CFStringRef presetName;
+}
+
 enum : AudioUnitPropertyID
 {
     kAudioUnitProperty_SRCAlgorithm             = 9, // see kAudioUnitProperty_SampleRateConverterComplexity
@@ -343,4 +395,132 @@ enum : AudioUnitPropertyID
 
     kAudioUnitProperty_ParameterValueName       = kAudioUnitProperty_ParameterStringFromValue,
     kAudioUnitProperty_BusCount                 = kAudioUnitProperty_ElementCount,
+}
+
+struct AudioUnitCocoaViewInfo
+{
+    CFURLRef    mCocoaAUViewBundleLocation;
+    CFStringRef[1] mCocoaAUViewClass;
+}
+
+extern(C) nothrow @nogc
+{
+    alias HostCallback_GetBeatAndTempo = OSStatus function(void * inHostUserData,
+                                                Float64 *   outCurrentBeat,
+                                                Float64 *   outCurrentTempo);
+
+    alias HostCallback_GetMusicalTimeLocation = OSStatus function(void *  inHostUserData,
+                                                    UInt32 *        outDeltaSampleOffsetToNextBeat,
+                                                    Float32 *       outTimeSig_Numerator,
+                                                    UInt32 *        outTimeSig_Denominator,
+                                                    Float64 *       outCurrentMeasureDownBeat);
+    alias HostCallback_GetTransportState = OSStatus function(void *   inHostUserData,
+                                            Boolean *           outIsPlaying,
+                                            Boolean *           outTransportStateChanged,
+                                            Float64 *           outCurrentSampleInTimeLine,
+                                            Boolean *           outIsCycling,
+                                            Float64 *           outCycleStartBeat,
+                                            Float64 *           outCycleEndBeat);
+    alias HostCallback_GetTransportState2 = OSStatus function(void * inHostUserData,
+                                            Boolean *           outIsPlaying,
+                                            Boolean *           outIsRecording,
+                                            Boolean *           outTransportStateChanged,
+                                            Float64 *           outCurrentSampleInTimeLine,
+                                            Boolean *           outIsCycling,
+                                            Float64 *           outCycleStartBeat,
+                                            Float64 *           outCycleEndBeat);
+}
+
+struct HostCallbackInfo
+{
+    void *                                    hostUserData;
+    HostCallback_GetBeatAndTempo              beatAndTempoProc;
+    HostCallback_GetMusicalTimeLocation       musicalTimeLocationProc;
+    HostCallback_GetTransportState            transportStateProc;
+    HostCallback_GetTransportState2           transportStateProc2;
+}
+
+struct AudioUnitParameterInfo
+{
+    char[52]                    name;
+    CFStringRef                 unitName;
+    UInt32                      clumpID;
+    CFStringRef                 cfNameString;
+    AudioUnitParameterUnit      unit;
+    AudioUnitParameterValue     minValue;
+    AudioUnitParameterValue     maxValue;
+    AudioUnitParameterValue     defaultValue;
+    AudioUnitParameterOptions   flags;
+}
+
+alias AudioUnitParameterUnit = UInt32;
+enum : AudioUnitParameterUnit
+{
+    kAudioUnitParameterUnit_Generic             = 0,
+    kAudioUnitParameterUnit_Indexed             = 1,
+    kAudioUnitParameterUnit_Boolean             = 2,
+    kAudioUnitParameterUnit_Percent             = 3,
+    kAudioUnitParameterUnit_Seconds             = 4,
+    kAudioUnitParameterUnit_SampleFrames        = 5,
+    kAudioUnitParameterUnit_Phase               = 6,
+    kAudioUnitParameterUnit_Rate                = 7,
+    kAudioUnitParameterUnit_Hertz               = 8,
+    kAudioUnitParameterUnit_Cents               = 9,
+    kAudioUnitParameterUnit_RelativeSemiTones   = 10,
+    kAudioUnitParameterUnit_MIDINoteNumber      = 11,
+    kAudioUnitParameterUnit_MIDIController      = 12,
+    kAudioUnitParameterUnit_Decibels            = 13,
+    kAudioUnitParameterUnit_LinearGain          = 14,
+    kAudioUnitParameterUnit_Degrees             = 15,
+    kAudioUnitParameterUnit_EqualPowerCrossfade = 16,
+    kAudioUnitParameterUnit_MixerFaderCurve1    = 17,
+    kAudioUnitParameterUnit_Pan                 = 18,
+    kAudioUnitParameterUnit_Meters              = 19,
+    kAudioUnitParameterUnit_AbsoluteCents       = 20,
+    kAudioUnitParameterUnit_Octaves             = 21,
+    kAudioUnitParameterUnit_BPM                 = 22,
+    kAudioUnitParameterUnit_Beats               = 23,
+    kAudioUnitParameterUnit_Milliseconds        = 24,
+    kAudioUnitParameterUnit_Ratio               = 25,
+    kAudioUnitParameterUnit_CustomUnit          = 26
+}
+
+alias AudioUnitParameterOptions = UInt32;
+enum : AudioUnitParameterOptions
+{
+    kAudioUnitParameterFlag_CFNameRelease       = (1UL << 4),
+
+    kAudioUnitParameterFlag_OmitFromPresets     = (1UL << 13),
+    kAudioUnitParameterFlag_PlotHistory         = (1UL << 14),
+    kAudioUnitParameterFlag_MeterReadOnly       = (1UL << 15),
+
+    // bit positions 18,17,16 are set aside for display scales. bit 19 is reserved.
+    kAudioUnitParameterFlag_DisplayMask         = (7UL << 16) | (1UL << 22),
+    kAudioUnitParameterFlag_DisplaySquareRoot   = (1UL << 16),
+    kAudioUnitParameterFlag_DisplaySquared      = (2UL << 16),
+    kAudioUnitParameterFlag_DisplayCubed        = (3UL << 16),
+    kAudioUnitParameterFlag_DisplayCubeRoot     = (4UL << 16),
+    kAudioUnitParameterFlag_DisplayExponential  = (5UL << 16),
+
+    kAudioUnitParameterFlag_HasClump            = (1UL << 20),
+    kAudioUnitParameterFlag_ValuesHaveStrings   = (1UL << 21),
+
+    kAudioUnitParameterFlag_DisplayLogarithmic  = (1UL << 22),
+
+    kAudioUnitParameterFlag_IsHighResolution    = (1UL << 23),
+    kAudioUnitParameterFlag_NonRealTime         = (1UL << 24),
+    kAudioUnitParameterFlag_CanRamp             = (1UL << 25),
+    kAudioUnitParameterFlag_ExpertMode          = (1UL << 26),
+    kAudioUnitParameterFlag_HasCFNameString     = (1UL << 27),
+    kAudioUnitParameterFlag_IsGlobalMeta        = (1UL << 28),
+    kAudioUnitParameterFlag_IsElementMeta       = (1UL << 29),
+    kAudioUnitParameterFlag_IsReadable          = (1UL << 30),
+    kAudioUnitParameterFlag_IsWritable          = (1UL << 31)
+}
+
+struct AudioUnitParameterNameInfo
+{
+    AudioUnitParameterID    inID;
+    SInt32                  inDesiredLength;
+    CFStringRef             outName;
 }
