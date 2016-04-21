@@ -60,6 +60,7 @@ class DerelictCoreServicesLoader : SharedLibLoader
         override void loadSymbols()
         {
             bindFunc(cast(void**)&SetComponentInstanceStorage, "SetComponentInstanceStorage");
+            bindFunc(cast(void**)&GetComponentInstanceStorage, "GetComponentInstanceStorage");
             bindFunc(cast(void**)&GetComponentInfo, "GetComponentInfo");
         }
     }
@@ -154,12 +155,14 @@ extern(C) nothrow @nogc
 {
     alias da_SetComponentInstanceStorage = void function(ComponentInstance, Handle);
     alias da_GetComponentInfo = OSErr function(Component, ComponentDescription*, Handle, Handle, Handle);
+    alias da_GetComponentInstanceStorage = Handle function(ComponentInstance aComponentInstance);
 }
 
 __gshared
 {
     da_SetComponentInstanceStorage SetComponentInstanceStorage;
     da_GetComponentInfo GetComponentInfo;
+    da_GetComponentInstanceStorage GetComponentInstanceStorage;
 }
 
 

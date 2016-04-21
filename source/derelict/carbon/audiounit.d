@@ -31,7 +31,9 @@
 */
 module derelict.carbon.audiounit;
 
+// AudioUnit and AudioToolbox frameworks loadder
 // Not strictly in Carbon, this is technical debt
+
 
 version(OSX):
 
@@ -66,6 +68,7 @@ class DerelictAudioUnitLoader : SharedLibLoader
         }
     }
 }
+
 
 __gshared DerelictAudioUnitLoader DerelictAudioUnit;
 
@@ -197,6 +200,22 @@ struct AudioUnitParameterEvent
 
     }
     EventValues eventValues;
+}
+
+struct AudioUnitParameter
+{
+    AudioUnit               mAudioUnit;
+    AudioUnitParameterID    mParameterID;
+    AudioUnitScope          mScope;
+    AudioUnitElement        mElement;
+}
+
+struct AudioUnitProperty
+{
+    AudioUnit               mAudioUnit;
+    AudioUnitPropertyID     mPropertyID;
+    AudioUnitScope          mScope;
+    AudioUnitElement        mElement;
 }
 
 extern(C) nothrow @nogc
@@ -523,4 +542,85 @@ struct AudioUnitParameterNameInfo
     AudioUnitParameterID    inID;
     SInt32                  inDesiredLength;
     CFStringRef             outName;
+}
+alias AudioUnitParameterIDName = AudioUnitParameterNameInfo;
+
+struct AudioUnitParameterStringFromValue
+{
+    AudioUnitParameterID                inParamID;
+    const(AudioUnitParameterValue)*     inValue;
+    CFStringRef                         outString;
+}
+
+struct AudioUnitParameterValueFromString
+{
+    AudioUnitParameterID        inParamID;
+    CFStringRef                 inString;
+    AudioUnitParameterValue     outValue;
+}
+
+
+
+// AudioToolbox framework
+
+static if(Derelict_OS_Mac)
+    enum libNamesToolbox = "/System/Library/Frameworks/AudioToolbox.framework/AudioToolbox";
+else
+    static assert(0, "Need to implement AudioToolbox libNames for this operating system.");
+
+
+class DerelictAudioToolboxLoader : SharedLibLoader
+{
+    protected
+    {
+        this()
+        {
+            super(libNamesToolbox);
+        }
+
+        override void loadSymbols()
+        {
+            bindFunc(cast(void**)&AUEventListenerNotify, "AUEventListenerNotify");
+        }
+    }
+}
+
+
+__gshared DerelictAudioToolboxLoader DerelictAudioToolbox;
+
+shared static this()
+{
+    DerelictAudioToolbox = new DerelictAudioToolboxLoader;
+}
+
+alias AudioUnitEventType = UInt32;
+enum : AudioUnitEventType
+{
+    kAudioUnitEvent_ParameterValueChange        = 0,
+    kAudioUnitEvent_BeginParameterChangeGesture = 1,
+    kAudioUnitEvent_EndParameterChangeGesture   = 2,
+    kAudioUnitEvent_PropertyChange              = 3
+}
+
+alias AUEventListenerRef = void*;
+
+struct AudioUnitEvent
+{
+    AudioUnitEventType                  mEventType;
+    union Argument
+    {
+        AudioUnitParameter  mParameter; // for parameter value change, begin and end gesture
+        AudioUnitProperty   mProperty;  // for kAudioUnitEvent_PropertyChange
+    }
+    Argument mArgument;
+}
+
+extern(C) nothrow @nogc
+{
+    alias da_AUEventListenerNotify = OSStatus function(AUEventListenerRef inSendingListener, void* inSendingObject, const(AudioUnitEvent)* inEvent);
+}
+
+__gshared
+{
+    da_AUEventListenerNotify AUEventListenerNotify;
 }

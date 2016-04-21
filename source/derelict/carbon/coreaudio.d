@@ -158,3 +158,17 @@ enum : AudioFormatID
 {
     kAudioFormatLinearPCM = CCONST('l', 'p', 'c', 'm')
 }
+
+alias AudioChannelLayoutTag = UInt32;
+enum : AudioChannelLayoutTag
+{
+    kAudioChannelLayoutTag_Mono                     = (100U<<16) | 1,   // a standard mono stream
+    kAudioChannelLayoutTag_Stereo                   = (101U<<16) | 2,   // a standard stereo stream (L R) - implied playback
+    kAudioChannelLayoutTag_StereoHeadphones         = (102U<<16) | 2,   // a standard stereo stream (L R) - implied headphone playback
+    kAudioChannelLayoutTag_MatrixStereo             = (103U<<16) | 2,   // a matrix encoded stereo stream (Lt, Rt)
+    kAudioChannelLayoutTag_MidSide                  = (104U<<16) | 2,   // mid/side recording
+    kAudioChannelLayoutTag_XY                       = (105U<<16) | 2,   // coincident mic pair (often 2 figure 8's)
+    kAudioChannelLayoutTag_Binaural                 = (106U<<16) | 2,   // binaural stereo (left, right)
+    kAudioChannelLayoutTag_Unknown                  = 0xFFFF0000        // needs to be OR'd with number of channels
+}
+

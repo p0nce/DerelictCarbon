@@ -89,14 +89,14 @@ class DerelictCoreFoundationLoader : SharedLibLoader
             bindFunc(cast(void**)&CFNumberCreate, "CFNumberCreate");
             bindFunc(cast(void**)&CFNumberGetValue, "CFNumberGetValue");
 
-            /*with (kCFAUPresetArrayCallBacks)
+            with (kCFTypeArrayCallBacks)
             {
                 version_ = 0;
                 retain = &myRetainCallBack;
                 release = &myReleaseCallBack;
                 copyDescription = CFCopyDescription;
                 equal = CFEqual;
-            }*/
+            }
 
             with (kCFTypeDictionaryKeyCallBacks)
             {
@@ -366,7 +366,7 @@ struct CFArrayCallBacks
     CFArrayEqualCallBack        equal;
 }
 
-//__gshared CFArrayCallBacks kCFAUPresetArrayCallBacks;
+__gshared CFArrayCallBacks kCFTypeArrayCallBacks;
 
 extern(C) nothrow @nogc
 {
