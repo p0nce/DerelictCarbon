@@ -44,6 +44,8 @@ import derelict.util.loader;
 
 import derelict.carbon.corefoundation;
 import derelict.carbon.coreaudio;
+import derelict.carbon.hitoolbox;
+import derelict.carbon.coreservices;
 
 static if(Derelict_OS_Mac)
     enum libNames = "/System/Library/Frameworks/AudioUnit.framework/AudioUnit";
@@ -265,6 +267,15 @@ __gshared
     AudioUnitGetPropertyProc AudioUnitGetProperty;
 }
 
+// AudioUnitCarbonView.h
+
+enum
+{
+    kAudioUnitCarbonViewRange                  = 0x0300,
+    kAudioUnitCarbonViewCreateSelect           = 0x0301,
+    kAudioUnitCarbonViewSetEventListenerSelect = 0x0302
+}
+
 
 // AudioUnitProperties.h
 
@@ -416,11 +427,6 @@ enum : AudioUnitPropertyID
     kAudioUnitProperty_BusCount                 = kAudioUnitProperty_ElementCount,
 }
 
-struct AudioUnitCocoaViewInfo
-{
-    CFURLRef    mCocoaAUViewBundleLocation;
-    CFStringRef[1] mCocoaAUViewClass;
-}
 
 extern(C) nothrow @nogc
 {
@@ -457,6 +463,12 @@ struct HostCallbackInfo
     HostCallback_GetMusicalTimeLocation       musicalTimeLocationProc;
     HostCallback_GetTransportState            transportStateProc;
     HostCallback_GetTransportState2           transportStateProc2;
+}
+
+struct AudioUnitCocoaViewInfo
+{
+    CFURLRef    mCocoaAUViewBundleLocation;
+    CFStringRef[1] mCocoaAUViewClass;
 }
 
 struct AudioUnitParameterInfo
@@ -623,4 +635,72 @@ extern(C) nothrow @nogc
 __gshared
 {
     da_AUEventListenerNotify AUEventListenerNotify;
+}
+
+
+// AudioUnitCarbonView.h
+// Technically in AU base classes but fits well here
+
+alias AudioUnitCarbonView = ComponentInstance;
+
+align(1) struct AudioUnitCarbonViewCreateGluePB
+{
+    align(1):
+    ubyte                          componentFlags;
+    ubyte                          componentParamSize;
+    short                          componentWhat;
+    ControlRef*                    outControl;
+    const(Float32Point)*           inSize;
+    const(Float32Point)*           inLocation;
+    ControlRef                     inParentControl;
+    WindowRef                      inWindow;
+    AudioUnit                      inAudioUnit;
+    AudioUnitCarbonView            inView;
+}
+
+version(X86_64)
+    static assert(AudioUnitCarbonViewCreateGluePB.sizeof == 60);
+version(X86)
+    static assert(AudioUnitCarbonViewCreateGluePB.sizeof == 32);
+
+//
+// AUDIO COMPONENT API
+//
+// AudioComponent.h
+
+
+alias AudioComponentFlags = UInt32;
+enum : AudioComponentFlags
+{
+    kAudioComponentFlag_Unsearchable = 1,  // available: OSX 10.7
+    kAudioComponentFlag_SandboxSafe = 2    // available: OSX 10.8
+}
+
+struct AudioComponentDescription
+{
+    OSType componentType;
+    OSType componentSubType;
+    OSType componentManufacturer;
+    UInt32 componentFlags;
+    UInt32 componentFlagsMask;
+}
+
+alias AudioComponent = void*;
+
+extern(C) nothrow
+{
+    alias AudioComponentMethod = OSStatus function(void *self,...);
+}
+
+struct AudioComponentPlugInInterface
+{
+    extern(C) nothrow OSStatus function(void *self, AudioComponentInstance mInstance) Open;
+    extern(C) nothrow OSStatus function(void *self) Close;
+    extern(C) nothrow AudioComponentMethod function(SInt16 selector) Lookup;
+    void*                reserved;
+}
+
+extern(C) nothrow
+{
+    alias AudioComponentFactoryFunction = AudioComponentPlugInInterface* function(const(AudioComponentDescription)* inDesc);
 }

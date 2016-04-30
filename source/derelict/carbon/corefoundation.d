@@ -69,6 +69,10 @@ class DerelictCoreFoundationLoader : SharedLibLoader
             bindFunc(cast(void**)&CFAllocatorAllocate, "CFAllocatorAllocate");
             bindFunc(cast(void**)&CFAllocatorDeallocate, "CFAllocatorDeallocate");
 
+            bindFunc(cast(void**)&CFBundleGetMainBundle, "CFBundleGetMainBundle");
+            bindFunc(cast(void**)&CFBundleGetBundleWithIdentifier, "CFBundleGetBundleWithIdentifier");
+            bindFunc(cast(void**)&CFBundleCopyBundleURL, "CFBundleCopyBundleURL");
+
             bindFunc(cast(void**)&CFStringCreateWithCString, "CFStringCreateWithCString");
             bindFunc(cast(void**)&CFStringGetLength, "CFStringGetLength");
             bindFunc(cast(void**)&CFStringGetCString, "CFStringGetCString");
@@ -189,6 +193,12 @@ alias ShortFixedPtr = ShortFixed*;
 alias Float32 = float;
 alias Float64 = double;
 
+struct Float32Point
+{
+    Float32 x;
+    Float32 y;
+}
+
 alias Ptr = char*;
 alias Handle = Ptr*;
 alias Size = long;
@@ -253,10 +263,10 @@ alias Byte = UInt8;
 alias SignedByte = SInt8;
 
 
-alias CFTypeID = ulong;
-alias CFOptionFlags = ulong;
-alias CFHashCode = ulong;
-alias CFIndex = long;
+alias CFTypeID = c_ulong;
+alias CFOptionFlags = c_ulong;
+alias CFHashCode = c_ulong;
+alias CFIndex = c_long;
 
 alias CFTypeRef = const(void)*;
 
@@ -335,6 +345,24 @@ __gshared
 {
     da_CFAllocatorAllocate CFAllocatorAllocate;
     da_CFAllocatorDeallocate CFAllocatorDeallocate;
+}
+
+// <CoreFoundation/CFBundle.h>
+
+alias CFBundleRef = void*;
+
+extern(C) nothrow @nogc
+{
+    alias da_CFBundleGetBundleWithIdentifier = CFBundleRef function(CFStringRef bundleID);
+    alias da_CFBundleCopyBundleURL = CFURLRef function(CFBundleRef bundle);
+    alias da_CFBundleGetMainBundle = CFBundleRef function();
+}
+
+__gshared
+{
+    da_CFBundleGetBundleWithIdentifier CFBundleGetBundleWithIdentifier;
+    da_CFBundleCopyBundleURL CFBundleCopyBundleURL;
+    da_CFBundleGetMainBundle CFBundleGetMainBundle;
 }
 
 
