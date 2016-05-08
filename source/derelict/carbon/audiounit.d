@@ -276,6 +276,11 @@ enum
     kAudioUnitCarbonViewSetEventListenerSelect = 0x0302
 }
 
+enum
+{
+    kAudioUnitCarbonViewComponentType   = CCONST('a', 'u', 'v', 'w'),
+    kAUCarbonViewSubType_Generic        = CCONST('g', 'n', 'r', 'c')
+}
 
 // AudioUnitProperties.h
 
@@ -704,3 +709,4 @@ extern(C) nothrow
 {
     alias AudioComponentFactoryFunction = AudioComponentPlugInInterface* function(const(AudioComponentDescription)* inDesc);
 }
+
