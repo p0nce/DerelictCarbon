@@ -1,4 +1,27 @@
 /*
+The MIT License (MIT)
+
+Copyright (c) 2015 Stephan Dilly
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+/*
 * Copyright (c) 2015 Guillaume Piolat
 * All rights reserved.
 *
@@ -72,6 +95,9 @@ class DerelictCoreFoundationLoader : SharedLibLoader
             bindFunc(cast(void**)&CFBundleGetMainBundle, "CFBundleGetMainBundle");
             bindFunc(cast(void**)&CFBundleGetBundleWithIdentifier, "CFBundleGetBundleWithIdentifier");
             bindFunc(cast(void**)&CFBundleCopyBundleURL, "CFBundleCopyBundleURL");
+            bindFunc(cast(void**)&CFBundleCopyResourcesDirectoryURL, "CFBundleCopyResourcesDirectoryURL");
+
+            bindFunc(cast(void**)&CFURLGetFileSystemRepresentation, "CFURLGetFileSystemRepresentation");
 
             bindFunc(cast(void**)&CFStringCreateWithCString, "CFStringCreateWithCString");
             bindFunc(cast(void**)&CFStringGetLength, "CFStringGetLength");
@@ -356,6 +382,9 @@ extern(C) nothrow @nogc
     alias da_CFBundleGetBundleWithIdentifier = CFBundleRef function(CFStringRef bundleID);
     alias da_CFBundleCopyBundleURL = CFURLRef function(CFBundleRef bundle);
     alias da_CFBundleGetMainBundle = CFBundleRef function();
+    alias da_CFBundleCopyResourcesDirectoryURL = CFURLRef function(CFBundleRef bundle);
+
+    alias da_CFURLGetFileSystemRepresentation = Boolean function(CFURLRef url, Boolean resolveAgainstBase, UInt8* buffer, CFIndex maxBufLen);
 }
 
 __gshared
@@ -363,8 +392,10 @@ __gshared
     da_CFBundleGetBundleWithIdentifier CFBundleGetBundleWithIdentifier;
     da_CFBundleCopyBundleURL CFBundleCopyBundleURL;
     da_CFBundleGetMainBundle CFBundleGetMainBundle;
-}
+    da_CFBundleCopyResourcesDirectoryURL CFBundleCopyResourcesDirectoryURL;
 
+    da_CFURLGetFileSystemRepresentation CFURLGetFileSystemRepresentation;
+}
 
 
 // <CoreFoundation/CFArray.h>

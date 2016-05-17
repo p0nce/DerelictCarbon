@@ -2,8 +2,9 @@
     "name": "derelict-carbon",
     "description": "A dynamic binding to CoreFoundation, CoreServices, CoreGraphics, CoreAudio, AudioUnit and HiToolbox packages.",
     "homepage": "https://github.com/p0nce/DerelictCarbon",
-    "license": "Boost",
+    "license": "Boost+MIT",
     "authors": [
+        "Stephan Dilly",
         "Guillaume Piolat"
     ],
 
